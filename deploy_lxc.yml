@@ -1,0 +1,27 @@
+---
+- name: Deploy Ubuntu LXC 
+  hosts: localhost
+
+  vars:
+    proxmox_host: "10.254.0.1"
+    proxmox_user: "root@pam"
+    vmid: 999
+
+  tasks:
+    - name: Create and start LXC
+      community.proxmox.proxmox:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_password: "{{ proxmox_password }}"
+        validate_certs: false   # Disabled because Proxmox uses self-signed certificates in the local testbed
+        node: "pve"
+        vmid: "{{ vmid }}"
+        hostname: "cicd"
+        password: "{{ lxc_password }}"
+        ostemplate: "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
+        storage: "local-lvm"
+        memory: 512
+        disk: 8
+        netif: '{"net0":"name=eth0,ip=dhcp,bridge=vmbr0"}'
+        update: false
+        state: present
