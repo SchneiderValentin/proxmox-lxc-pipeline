@@ -1,20 +1,27 @@
 ---
 - name: Deploy Ubuntu LXC 
-  hosts: localhost
+  hosts: runner
 
   vars:
     proxmox_host: "10.254.0.1"
     proxmox_user: "root@pam"
+    node_name: "pve"
     vmid: 999
 
+    # Network
+    lxc_bridge: "vmbr88"
+    lxc_ip: "10.254.0.9"
+    lxc_cidr: "24"
+    lxc_gw: "10.254.0.1"
+
   tasks:
-    - name: Create and start LXC
+    - name: Create LXC
       community.proxmox.proxmox:
         api_host: "{{ proxmox_host }}"
         api_user: "{{ proxmox_user }}"
         api_password: "{{ proxmox_password }}"
         validate_certs: false   # Disabled because Proxmox uses self-signed certificates in the local testbed
-        node: "pve"
+        node: "{{ node_name }}"
         vmid: "{{ vmid }}"
         hostname: "cicd"
         password: "{{ lxc_password }}"
@@ -22,6 +29,25 @@
         storage: "local-lvm"
         memory: 512
         disk: 8
-        netif: '{"net0":"name=eth0,ip=dhcp,bridge=vmbr0"}'
+        netif: '{"net0":"name=eth0,ip={{ lxc_ip }}/{{ lxc_cidr }},gw={{ lxc_gw }},bridge={{ lxc_bridge }}"}'
+        unprivileged: true 
+        features:
+          - nesting=1           # For container extensions
         update: false
         state: present
+
+    - name: Start LXC
+      community.proxmox.proxmox:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_password: "{{ proxmox_password }}"
+        validate_certs: false
+        node: "{{ node_name }}"
+        vmid: "{{ vmid }}"
+        state: started
+
+    - name: Verify LXC is reachable
+      ansible.builtin.wait_for:
+        host: "{{ lxc_ip }}"
+        port: 22
+        timeout: 30
