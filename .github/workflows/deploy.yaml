@@ -31,6 +31,6 @@ jobs:
           PROXMOX_PASSWORD: ${{ secrets.PROXMOX_API_PASSWORD }}
           LXC_PASSWORD: ${{ secrets.LXC_ROOT_PASSWORD }}
         run: |
-          ansible-playbook deploy_lxc.yml \
+          ansible-playbook -i inventory.yaml deploy_lxc.yaml \
             -e "proxmox_password=$PROXMOX_PASSWORD" \
             -e "lxc_password=$LXC_PASSWORD"
