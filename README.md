@@ -14,7 +14,8 @@ Automated GitOps-style deployment of an LXC (`demo`) on a local Proxmox host usi
 * **Trigger:** `push` to `main` or `workflow_dispatch`. 
 * **CD:** Executed via self-hosted GitHub Actions runner.
 * **IaC:** Automates dependency setup and executes the `deploy_lxc.yml` Ansible playbook.
-* **Provisioning:** Interacts with the Proxmox API via the `community.proxmox` module to create the container.
+* **Provisioning:** Interacts with the Proxmox API via the `community.proxmox` module to create and start the container.
+* **Health Check:** Verifies readiness by checking LXC reachability at port 22.
 
 ## Prerequisites
 
