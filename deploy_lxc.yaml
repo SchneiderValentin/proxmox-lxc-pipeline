@@ -1,53 +1,56 @@
 ---
-- name: Deploy Ubuntu LXC 
+- name: Deploy LXC Cluster
   hosts: runner
+  gather_facts: false
 
   vars:
     proxmox_host: "10.254.0.1"
     proxmox_user: "root@pam"
     node_name: "pve"
-    vmid: 999
 
-    # Network
+    # Shared Network Config
     lxc_bridge: "vmbr88"
-    lxc_ip: "10.254.0.9"
     lxc_cidr: "24"
     lxc_gw: "10.254.0.1"
 
   tasks:
-    - name: Create LXC
+    - name: Create LXC cluster
       community.proxmox.proxmox:
         api_host: "{{ proxmox_host }}"
         api_user: "{{ proxmox_user }}"
         api_password: "{{ proxmox_password }}"
         validate_certs: false   # Disabled because Proxmox uses self-signed certificates in the local testbed
         node: "{{ node_name }}"
-        vmid: "{{ vmid }}"
-        hostname: "cicd"
+        vmid: "{{ hostvars[item].vmid }}"
+        hostname: "{{ item }}"
         password: "{{ lxc_password }}"
         ostemplate: "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
         storage: "local-lvm"
         memory: 512
         disk: 8
-        netif: '{"net0":"name=eth0,ip={{ lxc_ip }}/{{ lxc_cidr }},gw={{ lxc_gw }},bridge={{ lxc_bridge }}"}'
-        unprivileged: true 
+        netif: '{"net0":"name=eth0,ip={{ hostvars[item].ansible_host }}/{{ lxc_cidr }},gw={{ lxc_gw }},bridge={{ lxc_bridge }}"}'
+        unprivileged: true
         features:
           - nesting=1           # For container extensions
         update: false
         state: present
+      loop: "{{ groups['lxc_nodes'] }}"
 
-    - name: Start LXC
+    - name: Start LXC cluster
       community.proxmox.proxmox:
         api_host: "{{ proxmox_host }}"
         api_user: "{{ proxmox_user }}"
         api_password: "{{ proxmox_password }}"
         validate_certs: false
         node: "{{ node_name }}"
-        vmid: "{{ vmid }}"
+        vmid: "{{ hostvars[item].vmid }}"
+        hostname: "{{ item }}"  # Prevents race condition "Key Error: 'name'" on fresh LXCs
         state: started
+      loop: "{{ groups['lxc_nodes'] }}"
 
-    - name: Verify LXC is reachable
+    - name: Verify all LXC cluster nodes are reachable
       ansible.builtin.wait_for:
-        host: "{{ lxc_ip }}"
+        host: "{{ hostvars[item].ansible_host }}"
         port: 22
         timeout: 30
+      loop: "{{ groups['lxc_nodes'] }}"

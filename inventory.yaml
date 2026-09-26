@@ -3,3 +3,16 @@ all:
   hosts:
     runner:
       ansible_connection: local
+
+  children:
+    lxc_nodes:
+      hosts:
+        load-balancer:
+          ansible_host: 10.254.0.90
+          vmid: 990
+        app-1:
+          ansible_host: 10.254.0.91
+          vmid: 991
+        app-2:
+          ansible_host: 10.254.0.92
+          vmid: 992
