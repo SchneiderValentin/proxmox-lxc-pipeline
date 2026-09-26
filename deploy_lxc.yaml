@@ -24,6 +24,7 @@
         vmid: "{{ hostvars[item].vmid }}"
         hostname: "{{ item }}"
         password: "{{ lxc_password }}"
+        pubkey: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"   # Inject SSH key
         ostemplate: "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
         storage: "local-lvm"
         memory: 512
@@ -48,9 +49,11 @@
         state: started
       loop: "{{ groups['lxc_nodes'] }}"
 
-    - name: Verify all LXC cluster nodes are reachable
-      ansible.builtin.wait_for:
-        host: "{{ hostvars[item].ansible_host }}"
-        port: 22
+- name: Verify SSH access
+  hosts: lxc_nodes
+  gather_facts: false
+
+  tasks:
+    - name: Wait for SSH login
+      ansible.builtin.wait_for_connection:
         timeout: 30
-      loop: "{{ groups['lxc_nodes'] }}"

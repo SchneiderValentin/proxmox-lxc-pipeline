@@ -6,6 +6,13 @@ all:
 
   children:
     lxc_nodes:
+
+      vars:
+        ansible_user: root
+        # Disabled for IP reuse across pipeline builds at local bridge
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+        ansible_python_interpreter: /usr/bin/python3
+
       hosts:
         load-balancer:
           ansible_host: 10.254.0.90
